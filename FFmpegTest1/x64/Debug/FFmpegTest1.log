@@ -1,12 +1,13 @@
-﻿  stdafx.cpp
-  RTSPBroadcaster.cpp
-  H264Encoder.cpp
-c:\users\brush\desktop\ffmpegtest1\ffmpegtest1\libavutil\common.h(152): warning C4244: 'return': conversion from 'int64_t' to 'int32_t', possible loss of data
-c:\users\brush\desktop\ffmpegtest1\ffmpegtest1\libavutil\common.h(235): warning C4244: 'argument': conversion from 'uint64_t' to 'uint32_t', possible loss of data
-  You must include stdint.h or inttypes.h before x264.h
-  FFmpegTest1.cpp
-c:\users\brush\desktop\ffmpegtest1\ffmpegtest1\libavutil\common.h(152): warning C4244: 'return': conversion from 'int64_t' to 'int32_t', possible loss of data
-c:\users\brush\desktop\ffmpegtest1\ffmpegtest1\libavutil\common.h(235): warning C4244: 'argument': conversion from 'uint64_t' to 'uint32_t', possible loss of data
-  You must include stdint.h or inttypes.h before x264.h
+﻿  LibAVEncoder.cpp
+c:\repos\ffmpegtest1\ffmpegtest1\libavutil\common.h(152): warning C4244: 'return': conversion from 'int64_t' to 'int32_t', possible loss of data
+c:\repos\ffmpegtest1\ffmpegtest1\libavutil\common.h(235): warning C4244: 'argument': conversion from 'uint64_t' to 'uint32_t', possible loss of data
   Generating Code...
-  FFmpegTest1.vcxproj -> C:\Users\brush\Desktop\FFmpegTest1\x64\Debug\FFmpegTest1.exe
+  Compiling...
+  FFmpegTest1.cpp
+c:\repos\ffmpegtest1\ffmpegtest1\libavutil\common.h(152): warning C4244: 'return': conversion from 'int64_t' to 'int32_t', possible loss of data
+c:\repos\ffmpegtest1\ffmpegtest1\libavutil\common.h(235): warning C4244: 'argument': conversion from 'uint64_t' to 'uint32_t', possible loss of data
+  Generating Code...
+libx264d.lib(cabacEnc.obj) : warning LNK4099: PDB 'libx264d.pdb' was not found with 'libx264d.lib(cabacEnc.obj)' or at 'C:\repos\FFmpegTest1\x64\Debug\libx264d.pdb'; linking object as if no debug info
+libx264d.lib(macroblockEnc.obj) : warning LNK4099: PDB 'libx264d.pdb' was not found with 'libx264d.lib(macroblockEnc.obj)' or at 'C:\repos\FFmpegTest1\x64\Debug\libx264d.pdb'; linking object as if no debug info
+libx264d.lib(setEnc.obj) : warning LNK4099: PDB 'libx264d.pdb' was not found with 'libx264d.lib(setEnc.obj)' or at 'C:\repos\FFmpegTest1\x64\Debug\libx264d.pdb'; linking object as if no debug info
+  FFmpegTest1.vcxproj -> C:\repos\FFmpegTest1\x64\Debug\FFmpegTest1.exe

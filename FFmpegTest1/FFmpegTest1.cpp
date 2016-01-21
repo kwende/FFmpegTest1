@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "H264Encoder.h"
+#include "LibAVEncoder.h"
 
 
 #include "liveMedia.hh"
@@ -11,11 +11,11 @@
 
 int main()
 {
-    H264Encoder encoder; 
+    //LibAVEncoder encoder;
 
-    encoder.Initialize(); 
-    encoder.DoLoop(); 
-    encoder.Shutdown(); 
+    //encoder.Initialize(); 
+    //encoder.DoLoop(); 
+    //encoder.Shutdown(); 
 
     return 0;
 }

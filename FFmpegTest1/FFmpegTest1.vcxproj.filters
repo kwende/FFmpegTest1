@@ -24,10 +24,13 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="H264Encoder.h">
+    <ClInclude Include="RTSPBroadcaster.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RTSPBroadcaster.h">
+    <ClInclude Include="x264Encoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LibAVEncoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,10 +41,13 @@
     <ClCompile Include="FFmpegTest1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="H264Encoder.cpp">
+    <ClCompile Include="RTSPBroadcaster.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RTSPBroadcaster.cpp">
+    <ClCompile Include="x264Encoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LibAVEncoder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
