@@ -1,0 +1,12 @@
+﻿  stdafx.cpp
+  RTSPBroadcaster.cpp
+  H264Encoder.cpp
+c:\users\brush\desktop\ffmpegtest1\ffmpegtest1\libavutil\common.h(152): warning C4244: 'return': conversion from 'int64_t' to 'int32_t', possible loss of data
+c:\users\brush\desktop\ffmpegtest1\ffmpegtest1\libavutil\common.h(235): warning C4244: 'argument': conversion from 'uint64_t' to 'uint32_t', possible loss of data
+  You must include stdint.h or inttypes.h before x264.h
+  FFmpegTest1.cpp
+c:\users\brush\desktop\ffmpegtest1\ffmpegtest1\libavutil\common.h(152): warning C4244: 'return': conversion from 'int64_t' to 'int32_t', possible loss of data
+c:\users\brush\desktop\ffmpegtest1\ffmpegtest1\libavutil\common.h(235): warning C4244: 'argument': conversion from 'uint64_t' to 'uint32_t', possible loss of data
+  You must include stdint.h or inttypes.h before x264.h
+  Generating Code...
+  FFmpegTest1.vcxproj -> C:\Users\brush\Desktop\FFmpegTest1\x64\Debug\FFmpegTest1.exe
