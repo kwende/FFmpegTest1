@@ -16,8 +16,8 @@ void x264Encoder::Initilize()
     x264_param_default_preset(&parameters, "veryfast", "zerolatency");
     parameters.i_log_level = X264_LOG_INFO;
     parameters.i_threads = 1;
-    parameters.i_width = 640;
-    parameters.i_height = 480;
+    parameters.i_width = 512;
+    parameters.i_height = 424;
     parameters.i_fps_num = 25;
     parameters.i_fps_den = 1;
     parameters.i_keyint_max = 25;
@@ -59,10 +59,6 @@ void x264Encoder::UnInitilize()
 //void x264Encoder::EncodeFrame(const cv::Mat& image)
 void x264Encoder::EncodeFrame(cv::Mat& image)
 {
-    std::cout << image.cols << std::endl; 
-    std::cout << image.rows << std::endl; 
-    std::cout << (int)image.data << std::endl; 
-
     int srcStride = parameters.i_width * 3;
     sws_scale(convertContext, &(image.data), &srcStride, 0, parameters.i_height, picture_in.img.plane, picture_in.img.i_stride);
     x264_nal_t* nals;

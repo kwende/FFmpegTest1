@@ -12,14 +12,6 @@
 #include "GroupsockHelper.hh"
 #include "H264LiveServerMediaSession.h"
 
-void Display(cv::Mat& mat)
-{
-    cv::imshow("MyVideo", mat);
-    cv::waitKey(1);
-
-    std::cout << "Poop" << std::endl;
-}
-
 int TestPlay()
 {
     cv::VideoCapture cap("c:/users/brush/desktop/feynman.mp4");
@@ -28,6 +20,8 @@ int TestPlay()
         return -1;
     }
 
+    int val = CV_8UC3;
+
     //double count = cap.get(CV_CAP_PROP_FRAME_COUNT); //get the frame count
     //cap.set(CV_CAP_PROP_POS_FRAMES, count - 1); //Set index to last frame
     cv::namedWindow("MyVideo", CV_WINDOW_AUTOSIZE);
@@ -35,12 +29,18 @@ int TestPlay()
     while (1)
     {
         cv::Mat frame;
+
         bool success = cap.read(frame);
+        int type = frame.type();
+
         if (!success) {
             std::cout << "Cannot read  frame " << std::endl;
             break;
         }
-        Display(frame); 
+        cv::imshow("MyVideo", frame);
+        cv::waitKey(1);
+
+        std::cout << "Poop" << std::endl;
         //if (cv::waitKey(0) == 27) break;
     }
 }
@@ -58,7 +58,7 @@ int main()
         exit(1);
     }
 
-    std::string streamName = "usb1";
+    std::string streamName = "feynman";
     ServerMediaSession* sms = ServerMediaSession::createNew(*usageEnvironment, streamName.c_str(), streamName.c_str(), "Live H264 Stream");
     H264LiveServerMediaSession *liveSubSession = H264LiveServerMediaSession::createNew(*usageEnvironment, true);
     sms->addSubsession(liveSubSession);

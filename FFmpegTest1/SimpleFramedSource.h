@@ -5,6 +5,8 @@
 #include <opencv2/core/core.hpp>
 #include "FramedSource.hh"
 #include "GroupsockHelper.hh"
+#include <Windows.h>
+#include <Kinect.h>
 
 class SimpleFramedSource : public FramedSource
 {
@@ -27,6 +29,11 @@ private:
     cv::VideoCapture *_videoCap; 
     timeval _time; 
     cv::Mat frame;
+    long _lastTickCount; 
+    // Current Kinect
+    IKinectSensor*          m_pKinectSensor;
 
+    // Depth reader
+    IDepthFrameReader*      m_pDepthFrameReader;
 };
 
