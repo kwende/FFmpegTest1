@@ -11,7 +11,7 @@ SimpleFramedSource* SimpleFramedSource::createNew(UsageEnvironment& env)
 SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
     :FramedSource(env)
 {
-    //this->_videoCap = new cv::VideoCapture("c:/users/brush/desktop/feynman.mp4"); 
+    this->_videoCap = new cv::VideoCapture("c:/users/brush/desktop/feynman.mp4"); 
     this->_currentFrameCount = 0; 
     // start up the x264 encoder. 
     this->_encoder = new x264Encoder();
@@ -34,7 +34,7 @@ void SimpleFramedSource::doGetNextFrame()
         // get a frame of data, encode, and enqueue it. 
         this->GetFrameAndEncodeToNALUnitsAndEnqueue(); 
         // get time of day for the broadcaster
-        //gettimeofday(&_time, NULL); 
+        gettimeofday(&_time, NULL); 
         // take the nal units and push them to live 555. 
         this->DeliverNALUnitsToLive555FromQueue(); 
     }
@@ -56,7 +56,6 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
         this->_videoCap->set(CV_CAP_PROP_POS_FRAMES, 0); 
     }
 
-    cv::Mat frame; 
     if (this->_videoCap->read(frame))
     {
         // encode to NALs

@@ -4,7 +4,7 @@
 #include "opencv2/opencv.hpp"
 #include <opencv2/core/core.hpp>
 #include "FramedSource.hh"
-#include "gettimeofday.h"
+#include "GroupsockHelper.hh"
 
 class SimpleFramedSource : public FramedSource
 {
@@ -26,5 +26,7 @@ private:
     int _currentFrameCount; 
     cv::VideoCapture *_videoCap; 
     timeval _time; 
+    cv::Mat frame;
+
 };
 
