@@ -87,7 +87,7 @@ void SimpleFramedSource::doGetNextFrame()
         }
     }
 
-    ::Sleep(20);
+    //::Sleep(20);
 }
 
 // this is the guy which will take data, encode it, and push it to the NAL queue. 
@@ -112,7 +112,7 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
     //        x264_nal_t nal = this->_encoder->getNalUnit();
     //        this->_nalQueue.push(nal);
     //    }
-    //}
+    //}Ta
 
     INT64 nTime = 0;
     IFrameDescription* pFrameDescription = NULL;
@@ -130,7 +130,7 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
     while (FAILED(hr))
     {
         hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
-        ::Sleep(30); 
+        //::Sleep(30); 
     }
 
     hr = pDepthFrame->get_RelativeTime(&nTime);
