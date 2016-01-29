@@ -21,7 +21,6 @@ extern "C" {
 #include <iostream>
 #include <concurrent_queue.h>
 #include <queue>
-
 #include <opencv2\opencv.hpp>
 
 
@@ -42,5 +41,7 @@ private:
     x264_param_t parameters;
     x264_picture_t picture_in, picture_out;
     x264_t* encoder;
+    int _waitPeriod, _fps; 
+    long _lastEncodeTime; 
 };
 

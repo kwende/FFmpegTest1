@@ -20,6 +20,7 @@ public:
 protected:
     SimpleFramedSource(UsageEnvironment& env);
 private:
+    USHORT* GetBuffer(); 
     x264Encoder *_encoder;
     std::queue<x264_nal_t> _nalQueue;
     static void onEventTriggered(void* clientData);
@@ -35,5 +36,7 @@ private:
 
     // Depth reader
     IDepthFrameReader*      m_pDepthFrameReader;
+
+    UINT16 *m_pCachedBuffer; 
 };
 

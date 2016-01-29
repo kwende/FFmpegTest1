@@ -58,7 +58,7 @@ int main()
         exit(1);
     }
 
-    std::string streamName = "feynman";
+    std::string streamName = "feynman2";
     ServerMediaSession* sms = ServerMediaSession::createNew(*usageEnvironment, streamName.c_str(), streamName.c_str(), "Live H264 Stream");
     H264LiveServerMediaSession *liveSubSession = H264LiveServerMediaSession::createNew(*usageEnvironment, true);
     sms->addSubsession(liveSubSession);

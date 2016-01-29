@@ -12,6 +12,7 @@ SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
     :FramedSource(env)
 {
     _lastTickCount = ::GetTickCount();
+    m_pCachedBuffer = 0;
 
     HRESULT hr;
 
@@ -66,127 +67,138 @@ void SimpleFramedSource::doGetNextFrame()
 {
     long currentTickCount = ::GetTickCount();
 
-    //std::cout << (currentTickCount - _lastTickCount) << std::endl;
-    //if (currentTickCount - _lastTickCount > 30)
+    if (this->_nalQueue.empty())
+    {
+        // get a frame of data, encode, and enqueue it. 
+        this->GetFrameAndEncodeToNALUnitsAndEnqueue();
+        // get time of day for the broadcaster
+        gettimeofday(&_time, NULL);
+        // take the nal units and push them to live 555. 
+        this->DeliverNALUnitsToLive555FromQueue();
+    }
+    else
+    {
+        // there's already stuff to deliver, so just deliver it. 
+        this->DeliverNALUnitsToLive555FromQueue();
+    }
+}
+
+USHORT* SimpleFramedSource::GetBuffer()
+{
+    LONG currentTickCount = ::GetTickCount();
+
+    //if (!m_pCachedBuffer || (currentTickCount - _lastTickCount > 1000))
     {
         _lastTickCount = currentTickCount;
 
-        if (this->_nalQueue.empty())
+        INT64 nTime = 0;
+        IFrameDescription* pFrameDescription = NULL;
+        int nWidth = 0;
+        int nHeight = 0;
+        USHORT nDepthMinReliableDistance = 0;
+        USHORT nDepthMaxDistance = 0;
+        UINT nBufferSize = 0;
+        UINT16 *pBuffer = NULL;
+
+        IDepthFrame* pDepthFrame = NULL;
+
+        HRESULT hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
+
+        while (FAILED(hr))
         {
-            // get a frame of data, encode, and enqueue it. 
-            this->GetFrameAndEncodeToNALUnitsAndEnqueue();
-            // get time of day for the broadcaster
-            gettimeofday(&_time, NULL);
-            // take the nal units and push them to live 555. 
-            this->DeliverNALUnitsToLive555FromQueue();
+            hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
         }
-        else
+
+        hr = pDepthFrame->get_RelativeTime(&nTime);
+
+        if (SUCCEEDED(hr))
         {
-            // there's already stuff to deliver, so just deliver it. 
-            this->DeliverNALUnitsToLive555FromQueue();
+            hr = pDepthFrame->get_FrameDescription(&pFrameDescription);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pFrameDescription->get_Width(&nWidth);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pFrameDescription->get_Height(&nHeight);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pDepthFrame->get_DepthMinReliableDistance(&nDepthMinReliableDistance);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            // In order to see the full range of depth (including the less reliable far field depth)
+            // we are setting nDepthMaxDistance to the extreme potential depth threshold
+            nDepthMaxDistance = USHRT_MAX;
+
+            // Note:  If you wish to filter by reliable depth distance, uncomment the following line.
+            //// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
+        }
+
+        if (!m_pCachedBuffer)
+        {
+            m_pCachedBuffer = new UINT16[nWidth * nHeight];
+        }
+
+        for (int c = 0; c < nWidth * nHeight; c++)
+        {
+            m_pCachedBuffer[c] = pBuffer[c];
+        }
+
+        if (pDepthFrame)
+        {
+            pDepthFrame->Release();
+        }
+
+        if (pFrameDescription)
+        {
+            pFrameDescription->Release();
         }
     }
+    //else
+    //{
+    //    std::cout << "-";
+    //}
 
-    //::Sleep(20);
+    return m_pCachedBuffer;
 }
 
 // this is the guy which will take data, encode it, and push it to the NAL queue. 
 void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
 {
-    //this->_currentFrameCount++;
+    int skipLength = 2;
 
-    //// if we have encountered the last frame, start over. 
-    //if (this->_currentFrameCount >= this->_videoCap->get(CV_CAP_PROP_FRAME_COUNT))
-    //{
-    //    this->_videoCap->set(CV_CAP_PROP_POS_FRAMES, 0);
-    //}
+    int nHeight = 424, nWidth = 512;
 
+    USHORT* pBuffer = GetBuffer();
 
-    //if (this->_videoCap->read(frame))
-    //{
-    //    // encode to NALs
-    //    this->_encoder->EncodeFrame(frame);
-    //    // now we dequeue the NAL units and put them onto our own queue. 
-    //    while (this->_encoder->IsNalsAvailableInOutputQueue())
-    //    {
-    //        x264_nal_t nal = this->_encoder->getNalUnit();
-    //        this->_nalQueue.push(nal);
-    //    }
-    //}Ta
+    // To convert to a byte, we're discarding the most-significant
+    // rather than least-significant bits.
+    // We're preserving detail, although the intensity will "wrap."
+    // Values outside the reliable depth range are mapped to 0 (black).
 
-    INT64 nTime = 0;
-    IFrameDescription* pFrameDescription = NULL;
-    int nWidth = 0;
-    int nHeight = 0;
-    USHORT nDepthMinReliableDistance = 0;
-    USHORT nDepthMaxDistance = 0;
-    UINT nBufferSize = 0;
-    UINT16 *pBuffer = NULL;
+    // Note: Using conditionals in this loop could degrade performance.
+    // Consider using a lookup table instead when writing production code.
+    //const UINT16* pBufferEnd = pBuffer + (nWidth * nHeight);
 
-    IDepthFrame* pDepthFrame = NULL;
+    cv::Mat rgbFrame = cv::Mat(nHeight / skipLength, nWidth / skipLength, CV_8UC3);
 
-    HRESULT hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
-
-    while (FAILED(hr))
+    for (int y = 0, rgbIndex = 0; y < nHeight; y += skipLength)
     {
-        hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
-        //::Sleep(30); 
-    }
-
-    hr = pDepthFrame->get_RelativeTime(&nTime);
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pDepthFrame->get_FrameDescription(&pFrameDescription);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pFrameDescription->get_Width(&nWidth);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pFrameDescription->get_Height(&nHeight);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pDepthFrame->get_DepthMinReliableDistance(&nDepthMinReliableDistance);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        // In order to see the full range of depth (including the less reliable far field depth)
-        // we are setting nDepthMaxDistance to the extreme potential depth threshold
-        nDepthMaxDistance = USHRT_MAX;
-
-        // Note:  If you wish to filter by reliable depth distance, uncomment the following line.
-        //// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
-
-        USHORT depth = *pBuffer;
-
-        // To convert to a byte, we're discarding the most-significant
-        // rather than least-significant bits.
-        // We're preserving detail, although the intensity will "wrap."
-        // Values outside the reliable depth range are mapped to 0 (black).
-
-        // Note: Using conditionals in this loop could degrade performance.
-        // Consider using a lookup table instead when writing production code.
-        const UINT16* pBufferEnd = pBuffer + (nWidth * nHeight);
-
-        cv::Mat rgbFrame = cv::Mat(nHeight, nWidth, CV_8UC3);
-
-
-        int index = 0;
-        while (pBuffer < pBufferEnd)
+        for (int x = 0; x < nWidth; x += skipLength, rgbIndex++)
         {
-            USHORT depth = *pBuffer;
+            USHORT depth = pBuffer[y * nWidth + x];
 
             // To convert to a byte, we're discarding the most-significant
             // rather than least-significant bits.
@@ -195,45 +207,25 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
 
             // Note: Using conditionals in this loop could degrade performance.
             // Consider using a lookup table instead when writing production code.
-            BYTE intensity = static_cast<BYTE>((depth >= nDepthMinReliableDistance) && (depth <= nDepthMaxDistance) ? (depth % 256) : 0);
+            BYTE intensity = static_cast<BYTE>((depth % 256));
 
-            //pRGBX->rgbRed = intensity;
-            //pRGBX->rgbGreen = intensity;
-            //pRGBX->rgbBlue = intensity;
-            //++pRGBX;
-
-            rgbFrame.data[(index * 3)] = intensity;
-            rgbFrame.data[(index * 3) + 1] = intensity;
-            rgbFrame.data[(index * 3) + 2] = intensity;
-
-            ++pBuffer;
-            index++;
+            rgbFrame.data[(rgbIndex * 3)] = intensity;
+            rgbFrame.data[(rgbIndex * 3) + 1] = intensity;
+            rgbFrame.data[(rgbIndex * 3) + 2] = intensity;
         }
-
-        //cv::imwrite("c:/users/brush/desktop/output.jpg", rgbFrame);
-
-        this->_encoder->EncodeFrame(rgbFrame);
-        // now we dequeue the NAL units and put them onto our own queue. 
-        while (this->_encoder->IsNalsAvailableInOutputQueue())
-        {
-            x264_nal_t nal = this->_encoder->getNalUnit();
-            this->_nalQueue.push(nal);
-        }
-
-        if (pDepthFrame)
-        {
-            pDepthFrame->Release(); 
-        }
-
-        if (pFrameDescription)
-        {
-            pFrameDescription->Release(); 
-        }
-
-        //pRGBX->rgbRed = intensity;
-        //pRGBX->rgbGreen = intensity;
-        //pRGBX->rgbBlue = intensity;
     }
+
+    //cv::imwrite("c:/users/brush/desktop/output.jpg", rgbFrame);
+
+    this->_encoder->EncodeFrame(rgbFrame);
+    // now we dequeue the NAL units and put them onto our own queue. 
+    while (this->_encoder->IsNalsAvailableInOutputQueue())
+    {
+        x264_nal_t nal = this->_encoder->getNalUnit();
+        this->_nalQueue.push(nal);
+    }
+
+    //delete pBuffer;
 }
 
 // Static function called whenever whatever "createEventTrigger" spins up decides. 
