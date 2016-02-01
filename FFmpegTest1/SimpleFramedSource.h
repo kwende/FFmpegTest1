@@ -17,6 +17,7 @@ public:
 
     ~SimpleFramedSource();
     virtual void doGetNextFrame();
+    virtual bool isCurrentlyAwaitingData(); 
 protected:
     SimpleFramedSource(UsageEnvironment& env);
 private:
@@ -24,10 +25,9 @@ private:
     x264Encoder *_encoder;
     std::queue<x264_nal_t> _nalQueue;
     static void onEventTriggered(void* clientData);
-    void DeliverNALUnitsToLive555FromQueue();
+    void DeliverNALUnitsToLive555FromQueue(bool newData);
     void GetFrameAndEncodeToNALUnitsAndEnqueue(); 
     int _currentFrameCount; 
-    cv::VideoCapture *_videoCap; 
     timeval _time; 
     cv::Mat frame;
     long _lastTickCount; 
@@ -38,5 +38,6 @@ private:
     IDepthFrameReader*      m_pDepthFrameReader;
 
     UINT16 *m_pCachedBuffer; 
+    int m_fps;
 };
 

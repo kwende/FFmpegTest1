@@ -4,7 +4,7 @@
 
 x264Encoder::x264Encoder()
 {
-    _fps = 5; 
+    _fps = 15; 
     _waitPeriod = 1000 / _fps; 
     _lastEncodeTime = -1; 
 }
@@ -19,11 +19,11 @@ void x264Encoder::Initilize()
     x264_param_default_preset(&parameters, "veryfast", "zerolatency");
     parameters.i_log_level = X264_LOG_INFO;
     parameters.i_threads = 1;
-    parameters.i_width = 512/2;
-    parameters.i_height = 424/2;
+    parameters.i_width = 512; 
+    parameters.i_height = 424; 
     parameters.i_fps_num = _fps;
     parameters.i_fps_den = 1;
-    parameters.i_keyint_max = 10; // 25;
+    parameters.i_keyint_max = 15;
     parameters.b_intra_refresh = 1;
     parameters.rc.i_rc_method = X264_RC_CRF;
     parameters.rc.i_vbv_buffer_size = 1000000;
@@ -62,16 +62,16 @@ void x264Encoder::UnInitilize()
 //void x264Encoder::EncodeFrame(const cv::Mat& image)
 void x264Encoder::EncodeFrame(cv::Mat& image)
 {
-    long currentTime = ::GetTickCount(); 
-    long sleepTime = _waitPeriod - (currentTime - _lastEncodeTime);
+    //long currentTime = ::GetTickCount(); 
+    //long sleepTime = _waitPeriod - (currentTime - _lastEncodeTime);
 
-    if (_lastEncodeTime != -1 && sleepTime > 0)
-    {
-        std::cout << "Sleep " << sleepTime << std::endl; 
-        ::Sleep(sleepTime); 
-    }
+    //if (_lastEncodeTime != -1 && sleepTime > 0)
+    //{
+    //    std::cout << "Sleep " << sleepTime << std::endl; 
+    //    ::Sleep(sleepTime); 
+    //}
 
-    _lastEncodeTime = currentTime;
+    //_lastEncodeTime = currentTime;
 
     int srcStride = parameters.i_width * 3;
     sws_scale(convertContext, &(image.data), &srcStride, 0, parameters.i_height, picture_in.img.plane, picture_in.img.i_stride);

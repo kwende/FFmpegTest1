@@ -13,6 +13,7 @@ SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
 {
     _lastTickCount = ::GetTickCount();
     m_pCachedBuffer = 0;
+    m_fps = 15;
 
     HRESULT hr;
 
@@ -46,6 +47,9 @@ SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
         }
     }
 
+    gettimeofday(&_time, NULL);
+    //_time.tv_sec = 0;
+    //_time.tv_usec = 0;
 
     //this->_videoCap = new cv::VideoCapture("c:/users/brush/desktop/feynman.mp4");
     this->_currentFrameCount = 0;
@@ -67,104 +71,121 @@ void SimpleFramedSource::doGetNextFrame()
 {
     long currentTickCount = ::GetTickCount();
 
+    std::cout << (currentTickCount - _lastTickCount) / 1000.0f << std::endl;
+
+    _lastTickCount = currentTickCount;
+
     if (this->_nalQueue.empty())
     {
         // get a frame of data, encode, and enqueue it. 
         this->GetFrameAndEncodeToNALUnitsAndEnqueue();
         // get time of day for the broadcaster
-        gettimeofday(&_time, NULL);
+
+        //long microseconds = _time.tv_usec;
+        //microseconds += 33000;
+        //long numberOfSeconds = microseconds / 1000000;
+        //long remainingNumberOfMicroseconds = microseconds % 1000000;
+
+        ////66000 microseconds = 66 milliseconds
+        //_time.tv_sec += numberOfSeconds;
+        //_time.tv_usec = remainingNumberOfMicroseconds;
+
+        //std::cout << _time.tv_sec << "." << _time.tv_usec << std::endl; 
+        ::gettimeofday(&_time, NULL);
+
         // take the nal units and push them to live 555. 
-        this->DeliverNALUnitsToLive555FromQueue();
+        this->DeliverNALUnitsToLive555FromQueue(true);
     }
     else
     {
         // there's already stuff to deliver, so just deliver it. 
-        this->DeliverNALUnitsToLive555FromQueue();
+        this->DeliverNALUnitsToLive555FromQueue(false);
     }
 }
 
 USHORT* SimpleFramedSource::GetBuffer()
 {
-    LONG currentTickCount = ::GetTickCount();
+    INT64 nTime = 0;
+    IFrameDescription* pFrameDescription = NULL;
+    int nWidth = 0;
+    int nHeight = 0;
+    USHORT nDepthMinReliableDistance = 0;
+    USHORT nDepthMaxDistance = 0;
+    UINT nBufferSize = 0;
+    UINT16 *pBuffer = NULL;
 
-    //if (!m_pCachedBuffer || (currentTickCount - _lastTickCount > 1000))
+    IDepthFrame* pDepthFrame = NULL;
+
+    //HANDLE hEvents[] = { reinterpret_cast<HANDLE>(m_WaitHandle) };
+    //WaitForMultipleObjects(1, hEvents, true, INFINITE);
+
+    //IDepthFrameArrivedEventArgs* pDepthArgs = nullptr;
+    //HRESULT hr = m_pDepthFrameReader->GetFrameArrivedEventData(m_WaitHandle, &pDepthArgs);
+    HRESULT hr = S_OK;
+    do
     {
-        _lastTickCount = currentTickCount;
+        hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
+    } while (FAILED(hr));
 
-        INT64 nTime = 0;
-        IFrameDescription* pFrameDescription = NULL;
-        int nWidth = 0;
-        int nHeight = 0;
-        USHORT nDepthMinReliableDistance = 0;
-        USHORT nDepthMaxDistance = 0;
-        UINT nBufferSize = 0;
-        UINT16 *pBuffer = NULL;
+    //::Sleep(30); 
 
-        IDepthFrame* pDepthFrame = NULL;
+    //pDepthArgs->Release(); 
 
-        HRESULT hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
+    hr = pDepthFrame->get_RelativeTime(&nTime);
 
-        while (FAILED(hr))
-        {
-            hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
-        }
+    if (SUCCEEDED(hr))
+    {
+        hr = pDepthFrame->get_FrameDescription(&pFrameDescription);
+    }
 
-        hr = pDepthFrame->get_RelativeTime(&nTime);
+    if (SUCCEEDED(hr))
+    {
+        hr = pFrameDescription->get_Width(&nWidth);
+    }
 
-        if (SUCCEEDED(hr))
-        {
-            hr = pDepthFrame->get_FrameDescription(&pFrameDescription);
-        }
+    if (SUCCEEDED(hr))
+    {
+        hr = pFrameDescription->get_Height(&nHeight);
+    }
 
-        if (SUCCEEDED(hr))
-        {
-            hr = pFrameDescription->get_Width(&nWidth);
-        }
+    if (SUCCEEDED(hr))
+    {
+        hr = pDepthFrame->get_DepthMinReliableDistance(&nDepthMinReliableDistance);
+    }
 
-        if (SUCCEEDED(hr))
-        {
-            hr = pFrameDescription->get_Height(&nHeight);
-        }
+    if (SUCCEEDED(hr))
+    {
+        // In order to see the full range of depth (including the less reliable far field depth)
+        // we are setting nDepthMaxDistance to the extreme potential depth threshold
+        nDepthMaxDistance = USHRT_MAX;
 
-        if (SUCCEEDED(hr))
-        {
-            hr = pDepthFrame->get_DepthMinReliableDistance(&nDepthMinReliableDistance);
-        }
+        // Note:  If you wish to filter by reliable depth distance, uncomment the following line.
+        //// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
+    }
 
-        if (SUCCEEDED(hr))
-        {
-            // In order to see the full range of depth (including the less reliable far field depth)
-            // we are setting nDepthMaxDistance to the extreme potential depth threshold
-            nDepthMaxDistance = USHRT_MAX;
+    if (SUCCEEDED(hr))
+    {
+        hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
+    }
 
-            // Note:  If you wish to filter by reliable depth distance, uncomment the following line.
-            //// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
-        }
+    if (!m_pCachedBuffer)
+    {
+        m_pCachedBuffer = new UINT16[nWidth * nHeight];
+    }
 
-        if (SUCCEEDED(hr))
-        {
-            hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
-        }
+    for (int c = 0; c < nWidth * nHeight; c++)
+    {
+        m_pCachedBuffer[c] = pBuffer[c];
+    }
 
-        if (!m_pCachedBuffer)
-        {
-            m_pCachedBuffer = new UINT16[nWidth * nHeight];
-        }
+    if (pDepthFrame)
+    {
+        pDepthFrame->Release();
+    }
 
-        for (int c = 0; c < nWidth * nHeight; c++)
-        {
-            m_pCachedBuffer[c] = pBuffer[c];
-        }
-
-        if (pDepthFrame)
-        {
-            pDepthFrame->Release();
-        }
-
-        if (pFrameDescription)
-        {
-            pFrameDescription->Release();
-        }
+    if (pFrameDescription)
+    {
+        pFrameDescription->Release();
     }
     //else
     //{
@@ -177,7 +198,7 @@ USHORT* SimpleFramedSource::GetBuffer()
 // this is the guy which will take data, encode it, and push it to the NAL queue. 
 void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
 {
-    int skipLength = 2;
+    int skipLength = 1;
 
     int nHeight = 424, nWidth = 512;
 
@@ -233,11 +254,16 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
 // system works. I'm sure I will know more as I see it operate. 
 void SimpleFramedSource::onEventTriggered(void* clientData)
 {
-    ((SimpleFramedSource*)clientData)->DeliverNALUnitsToLive555FromQueue();
+    ((SimpleFramedSource*)clientData)->DeliverNALUnitsToLive555FromQueue(false);
+}
+
+bool SimpleFramedSource::isCurrentlyAwaitingData()
+{
+    return this->_nalQueue.size() > 0;
 }
 
 // pops shit off the NAL queue and sends it to live555. 
-void SimpleFramedSource::DeliverNALUnitsToLive555FromQueue()
+void SimpleFramedSource::DeliverNALUnitsToLive555FromQueue(bool newData)
 {
     // this is basically a direct copy of the stuff from 
     // https://github.com/RafaelPalomar/H264LiveStreamer/blob/master/LiveSourceWithx264.cxx. 
@@ -272,7 +298,20 @@ void SimpleFramedSource::DeliverNALUnitsToLive555FromQueue()
     {
         fFrameSize = nal.i_payload - trancate;
     }
+    //http://comments.gmane.org/gmane.comp.multimedia.live555.devel/4930
+    //http://stackoverflow.com/questions/13863673/how-to-write-a-live555-framedsource-to-allow-me-to-stream-h-264-live
+    timeval lastPresentationTime = fPresentationTime;
+    //std::cout << (this->_time.tv_sec - lastPresentationTime.tv_sec) << std::endl;
+    //std::cout << this->_time.tv_sec << "." << this->_time.tv_usec << std::endl;
     fPresentationTime = this->_time;
+    if (newData)
+    {
+        fDurationInMicroseconds = 1000000 / m_fps; // 66000;
+    }
+    else
+    {
+        fDurationInMicroseconds = 0;
+    }
     memmove(fTo, nal.p_payload + trancate, fFrameSize);
     FramedSource::afterGetting(this);
 }
