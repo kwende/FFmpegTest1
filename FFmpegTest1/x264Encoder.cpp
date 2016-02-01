@@ -4,7 +4,7 @@
 
 x264Encoder::x264Encoder()
 {
-    _fps = 15; 
+    _fps = 30; 
     _waitPeriod = 1000 / _fps; 
     _lastEncodeTime = -1; 
 }
@@ -19,8 +19,8 @@ void x264Encoder::Initilize()
     x264_param_default_preset(&parameters, "veryfast", "zerolatency");
     parameters.i_log_level = X264_LOG_INFO;
     parameters.i_threads = 1;
-    parameters.i_width = 512; 
-    parameters.i_height = 424; 
+    parameters.i_width = 512/2; 
+    parameters.i_height = 424/2; 
     parameters.i_fps_num = _fps;
     parameters.i_fps_den = 1;
     parameters.i_keyint_max = 15;

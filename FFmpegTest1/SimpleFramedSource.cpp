@@ -13,7 +13,7 @@ SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
 {
     _lastTickCount = ::GetTickCount();
     m_pCachedBuffer = 0;
-    m_fps = 15;
+    m_fps = 30;
 
     HRESULT hr;
 
@@ -33,17 +33,34 @@ SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
         if (SUCCEEDED(hr))
         {
             hr = m_pKinectSensor->get_DepthFrameSource(&pDepthFrameSource);
+
+            if (SUCCEEDED(hr))
+            {
+                hr = pDepthFrameSource->OpenReader(&m_pDepthFrameReader);
+            }
         }
+
+        IInfraredFrameSource* pInfraredFrameSource = NULL; 
 
         if (SUCCEEDED(hr))
         {
-            hr = pDepthFrameSource->OpenReader(&m_pDepthFrameReader);
+            hr = m_pKinectSensor->get_InfraredFrameSource(&pInfraredFrameSource);
+
+            if (SUCCEEDED(hr))
+            {
+                hr = pInfraredFrameSource->OpenReader(&m_pInfraredFrameReader); 
+            }
         }
 
         //SafeRelease(pDepthFrameSource);
         if (pDepthFrameSource != NULL)
         {
             pDepthFrameSource->Release();
+        }
+
+        if (pInfraredFrameSource != NULL)
+        {
+            pInfraredFrameSource->Release(); 
         }
     }
 
@@ -103,7 +120,102 @@ void SimpleFramedSource::doGetNextFrame()
     }
 }
 
-USHORT* SimpleFramedSource::GetBuffer()
+USHORT* SimpleFramedSource::GetIRBuffer()
+{
+    INT64 nTime = 0;
+    IFrameDescription* pFrameDescription = NULL;
+    int nWidth = 0;
+    int nHeight = 0;
+    USHORT nDepthMinReliableDistance = 0;
+    USHORT nDepthMaxDistance = 0;
+    UINT nBufferSize = 0;
+    UINT16 *pBuffer = NULL;
+
+    IInfraredFrame* pInfraredFrame = NULL;
+
+    //HANDLE hEvents[] = { reinterpret_cast<HANDLE>(m_WaitHandle) };
+    //WaitForMultipleObjects(1, hEvents, true, INFINITE);
+
+    //IDepthFrameArrivedEventArgs* pDepthArgs = nullptr;
+    //HRESULT hr = m_pDepthFrameReader->GetFrameArrivedEventData(m_WaitHandle, &pDepthArgs);
+    HRESULT hr = S_OK;
+    do
+    {
+        hr = m_pInfraredFrameReader->AcquireLatestFrame(&pInfraredFrame);
+    } while (FAILED(hr));
+
+    //::Sleep(30); 
+
+    //pDepthArgs->Release(); 
+
+    hr = pInfraredFrame->get_RelativeTime(&nTime);
+
+    if (SUCCEEDED(hr))
+    {
+        hr = pInfraredFrame->get_FrameDescription(&pFrameDescription);
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        hr = pFrameDescription->get_Width(&nWidth);
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        hr = pFrameDescription->get_Height(&nHeight);
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        hr = pInfraredFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
+    }
+
+    if (!m_pCachedBuffer)
+    {
+        m_pCachedBuffer = new UINT16[nWidth * nHeight];
+    }
+
+    for (int c = 0; c < nWidth * nHeight; c++)
+    {
+        // normalize the incoming infrared data (ushort) to a float ranging from 
+        // [InfraredOutputValueMinimum, InfraredOutputValueMaximum] by
+        // 1. dividing the incoming value by the source maximum value
+        float intensityRatio = static_cast<float>(pBuffer[c]) / InfraredSourceValueMaximum;
+
+        // 2. dividing by the (average scene value * standard deviations)
+        intensityRatio /= InfraredSceneValueAverage * InfraredSceneStandardDeviations;
+
+        // 3. limiting the value to InfraredOutputValueMaximum
+        intensityRatio = min(InfraredOutputValueMaximum, intensityRatio);
+
+        // 4. limiting the lower value InfraredOutputValueMinimym
+        intensityRatio = max(InfraredOutputValueMinimum, intensityRatio);
+
+        // 5. converting the normalized value to a byte and using the result
+        // as the RGB components required by the image
+        byte intensity = static_cast<byte>(intensityRatio * 255.0f);
+
+        m_pCachedBuffer[c] = intensity;
+    }
+
+    if (pInfraredFrame)
+    {
+        pInfraredFrame->Release();
+    }
+
+    if (pFrameDescription)
+    {
+        pFrameDescription->Release();
+    }
+    //else
+    //{
+    //    std::cout << "-";
+    //}
+
+    return m_pCachedBuffer;
+}
+
+USHORT* SimpleFramedSource::GetDepthBuffer()
 {
     INT64 nTime = 0;
     IFrameDescription* pFrameDescription = NULL;
@@ -198,11 +310,12 @@ USHORT* SimpleFramedSource::GetBuffer()
 // this is the guy which will take data, encode it, and push it to the NAL queue. 
 void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
 {
-    int skipLength = 1;
+    int skipLength = 2;
 
     int nHeight = 424, nWidth = 512;
 
-    USHORT* pBuffer = GetBuffer();
+   // USHORT* pBuffer = GetDepthBuffer();
+    USHORT* pBuffer = GetIRBuffer();
 
     // To convert to a byte, we're discarding the most-significant
     // rather than least-significant bits.
