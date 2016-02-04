@@ -45,6 +45,9 @@
     <ClInclude Include="WindowsAudioInputDevice_common.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WindowsAudioMediaSession.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -72,6 +75,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="WindowsAudioInputDevice_common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowsAudioMediaSession.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -110,7 +110,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avresample.lib;avutil.lib;libBasicUsageEnvironmentd.lib;libgroupsockd.lib;libliveMediad.lib;libUsageEnvironmentd.lib;opencv_world310d.lib;libx264d.lib;swscale.lib;ws2_32.lib;kinect20.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avresample.lib;avutil.lib;libBasicUsageEnvironmentd.lib;libgroupsockd.lib;libliveMediad.lib;libUsageEnvironmentd.lib;opencv_world310d.lib;libx264d.lib;swscale.lib;ws2_32.lib;kinect20.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -161,6 +161,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WindowsAudioInputDevice_common.hh" />
     <ClInclude Include="WindowsAudioInputDevice_noMixer.hh" />
+    <ClInclude Include="WindowsAudioMediaSession.h" />
     <ClInclude Include="x264Encoder.h" />
   </ItemGroup>
   <ItemGroup>
@@ -177,6 +178,7 @@
     </ClCompile>
     <ClCompile Include="WindowsAudioInputDevice_common.cpp" />
     <ClCompile Include="WindowsAudioInputDevice_noMixer.cpp" />
+    <ClCompile Include="WindowsAudioMediaSession.cpp" />
     <ClCompile Include="x264Encoder.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
