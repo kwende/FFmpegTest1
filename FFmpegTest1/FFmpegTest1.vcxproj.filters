@@ -39,6 +39,12 @@
     <ClInclude Include="SimpleFramedSource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WindowsAudioInputDevice_noMixer.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsAudioInputDevice_common.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -60,6 +66,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SimpleFramedSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowsAudioInputDevice_noMixer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowsAudioInputDevice_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

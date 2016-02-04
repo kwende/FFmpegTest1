@@ -88,7 +88,7 @@ void SimpleFramedSource::doGetNextFrame()
 {
     long currentTickCount = ::GetTickCount();
 
-    std::cout << (currentTickCount - _lastTickCount) / 1000.0f << std::endl;
+    //std::cout << (currentTickCount - _lastTickCount) / 1000.0f << std::endl;
 
     _lastTickCount = currentTickCount;
 
