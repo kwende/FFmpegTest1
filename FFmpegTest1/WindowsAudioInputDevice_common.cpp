@@ -127,6 +127,8 @@ void WindowsAudioInputDevice_common::onceAudioIsReady() {
   }
   fDurationInMicroseconds = 1000000/fSamplingFrequency;
 
+  std::cout << "."; 
+
   // Call our own 'after getting' function.  Because we sometimes get here
   // after returning from a delay, we can call this directly, without risking
   // infinite recursion
@@ -134,7 +136,9 @@ void WindowsAudioInputDevice_common::onceAudioIsReady() {
 }
 
 static void CALLBACK waveInCallback(HWAVEIN /*hwi*/, UINT uMsg,
-				    DWORD /*dwInstance*/, DWORD dwParam1, DWORD /*dwParam2*/) {
+				    DWORD_PTR /*dwInstance*/, DWORD_PTR dwParam1, DWORD_PTR /*dwParam2*/) {
+
+
   switch (uMsg) {
   case WIM_DATA:
     WAVEHDR* hdr = (WAVEHDR*)dwParam1;
@@ -149,12 +153,19 @@ Boolean WindowsAudioInputDevice_common::openWavInPort(int index, unsigned numCha
 	// Configure the port, based on the specified parameters:
     WAVEFORMATEX wfx;
     wfx.wFormatTag      = WAVE_FORMAT_PCM;
-    wfx.nChannels       = numChannels;
-    wfx.nSamplesPerSec  = samplingFrequency;
-    wfx.wBitsPerSample  = _bitsPerSample;
-    wfx.nBlockAlign     = (numChannels*_bitsPerSample)/8;
+    wfx.nChannels = numChannels;
+    wfx.nSamplesPerSec = samplingFrequency;
+    wfx.wBitsPerSample = _bitsPerSample;
+    wfx.nBlockAlign = (numChannels*_bitsPerSample) / 8;
     wfx.nAvgBytesPerSec = samplingFrequency*wfx.nBlockAlign;
     wfx.cbSize          = 0;
+
+    std::cout << "wFormatTag = " << wfx.wFormatTag << std::endl; ;
+    std::cout << "nChannels = " << wfx.nChannels << std::endl; ;
+    std::cout << "nSamplesPerSec = " << wfx.nSamplesPerSec << std::endl; ;
+    std::cout << "wBitsPerSample = " << wfx.wBitsPerSample << std::endl; ;
+    std::cout << "nBlockAlign = " << wfx.nBlockAlign << std::endl; ;
+    std::cout << "nAvgBytesPerSec = " << wfx.nAvgBytesPerSec << std::endl; ;
 
     blockSize = (wfx.nAvgBytesPerSec*granularityInMS)/1000;
 
@@ -176,8 +187,12 @@ Boolean WindowsAudioInputDevice_common::waveIn_open(unsigned uid, WAVEFORMATEX& 
 
   do {
     waveIn_reset();
-    if (waveInOpen(&shWaveIn, uid, &wfx,
-		   (DWORD)waveInCallback, 0, CALLBACK_FUNCTION) != MMSYSERR_NOERROR) break;
+    MMRESULT result = waveInOpen(&shWaveIn, uid, &wfx,
+        (DWORD_PTR)waveInCallback, 0, CALLBACK_FUNCTION);
+
+    std::cout << "Open status " << result << std::endl; 
+
+    if (result != MMSYSERR_NOERROR) break;
 
     // Allocate read buffers, and headers:
     readData = new unsigned char[numBlocks*blockSize];

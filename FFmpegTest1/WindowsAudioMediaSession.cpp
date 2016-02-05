@@ -75,7 +75,7 @@ FramedSource* WindowsAudioMediaSession::createNewStreamSource(unsigned clientSes
     // Based on encoder configuration i kept it 90000
     estBitRate = 90000;
     int inputPortNumber = 0;
-    unsigned char bitsPerSample = 16000;
+    unsigned char bitsPerSample = 16;
     unsigned char numChannels = 1;
     unsigned samplingFrequency = 8000;
     unsigned granularityInMS = 20;
