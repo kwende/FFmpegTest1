@@ -26,6 +26,9 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include "AudioInputDevice.hh"
 #endif
 
+#include <iostream>
+
+
 class WindowsAudioInputDevice_common: public AudioInputDevice {
 public:
   static Boolean openWavInPort(int index, unsigned numChannels, unsigned samplingFrequency, unsigned granularityInMS);

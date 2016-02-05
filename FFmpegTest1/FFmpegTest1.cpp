@@ -30,7 +30,7 @@ int main()
     H264LiveServerMediaSession *liveSubSession = H264LiveServerMediaSession::createNew(*usageEnvironment, true);
     sms->addSubsession(liveSubSession);
     WindowsAudioMediaSession* audioSession = WindowsAudioMediaSession::createNew(*usageEnvironment, true); 
-    sms->addSubsession(audioSession); 
+    sms->addSubsession(audioSession);
     rtspServer->addServerMediaSession(sms);
     char* url = rtspServer->rtspURL(sms);
     *usageEnvironment << "Play the stream using url " << url << "\n";

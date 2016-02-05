@@ -74,13 +74,8 @@ FramedSource* WindowsAudioMediaSession::createNewStreamSource(unsigned clientSes
 {
     // Based on encoder configuration i kept it 90000
     estBitRate = 90000;
-    int inputPortNumber = 0;
-    unsigned char bitsPerSample = 16000;
-    unsigned char numChannels = 1;
-    unsigned samplingFrequency = 8000;
-    unsigned granularityInMS = 20;
     AudioInputDevice *source = WindowsAudioInputDevice::createNew(envir(),
-        inputPortNumber, bitsPerSample, numChannels, samplingFrequency, granularityInMS); 
+        0, 16, 1, 44100); 
     // are you trying to keep the reference of the source somewhere? you shouldn't.  
     // Live555 will create and delete this class object many times. if you store it somewhere  
     // you will get memory access violation. instead you should configure you source to always read from your data source
@@ -89,5 +84,11 @@ FramedSource* WindowsAudioMediaSession::createNewStreamSource(unsigned clientSes
 
 RTPSink* WindowsAudioMediaSession::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char rtpPayloadTypeIfDynamic, FramedSource* inputSource)
 {
-    return H264VideoRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic);
+    //return SimpleRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic, );
+    return SimpleRTPSink::createNew(envir(), rtpGroupsock,
+        8,
+        44100,
+        "audio",
+        "L16",
+        11);
 }

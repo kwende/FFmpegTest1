@@ -1,1 +1,7 @@
-﻿
+﻿  WindowsAudioInputDevice_common.cpp
+c:\repos\ffmpegtest1\ffmpegtest1\windowsaudioinputdevice_common.cpp(140): warning C4312: 'type cast': conversion from 'DWORD' to 'WAVEHDR *' of greater size
+c:\repos\ffmpegtest1\ffmpegtest1\windowsaudioinputdevice_common.cpp(188): warning C4311: 'type cast': pointer truncation from 'void (__cdecl *)(HWAVEIN,UINT,DWORD,DWORD,DWORD)' to 'DWORD'
+c:\repos\ffmpegtest1\ffmpegtest1\windowsaudioinputdevice_common.cpp(188): warning C4302: 'type cast': truncation from 'void (__cdecl *)(HWAVEIN,UINT,DWORD,DWORD,DWORD)' to 'DWORD'
+c:\repos\ffmpegtest1\ffmpegtest1\windowsaudioinputdevice_common.cpp(266): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+c:\repos\ffmpegtest1\ffmpegtest1\windowsaudioinputdevice_common.cpp(308): warning C4244: 'initializing': conversion from '__int64' to 'unsigned int', possible loss of data
+  FFmpegTest1.vcxproj -> C:\repos\FFmpegTest1\x64\Debug\FFmpegTest1.exe

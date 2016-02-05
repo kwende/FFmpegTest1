@@ -145,16 +145,23 @@ static void CALLBACK waveInCallback(HWAVEIN /*hwi*/, UINT uMsg,
 
 Boolean WindowsAudioInputDevice_common::openWavInPort(int index, unsigned numChannels, unsigned samplingFrequency, unsigned granularityInMS) {
 	uSecsPerByte = (8*1e6)/(_bitsPerSample*numChannels*samplingFrequency);
-
+    int sampleRate = 44100;
 	// Configure the port, based on the specified parameters:
     WAVEFORMATEX wfx;
-    wfx.wFormatTag      = WAVE_FORMAT_PCM;
-    wfx.nChannels       = numChannels;
-    wfx.nSamplesPerSec  = samplingFrequency;
-    wfx.wBitsPerSample  = _bitsPerSample;
-    wfx.nBlockAlign     = (numChannels*_bitsPerSample)/8;
-    wfx.nAvgBytesPerSec = samplingFrequency*wfx.nBlockAlign;
-    wfx.cbSize          = 0;
+    //wfx.wFormatTag      = WAVE_FORMAT_PCM;
+    //wfx.nChannels = numChannels;
+    //wfx.nSamplesPerSec = samplingFrequency;
+    //wfx.wBitsPerSample = _bitsPerSample;
+    //wfx.nBlockAlign = (numChannels*_bitsPerSample) / 8;
+    //wfx.nAvgBytesPerSec = wfx.nSamplesPerSec*2;
+    //wfx.cbSize          = 0;
+    wfx.wFormatTag = WAVE_FORMAT_PCM;     // simple, uncompressed format
+    wfx.nChannels = 1;                    //  1=mono, 2=stereo
+    wfx.nSamplesPerSec = sampleRate;      // 44100
+    wfx.nAvgBytesPerSec = sampleRate * 2;   // = nSamplesPerSec * n.Channels *    wBitsPerSample/8
+    wfx.nBlockAlign = 2;                  // = n.Channels * wBitsPerSample/8
+    wfx.wBitsPerSample = 16;              //  16 for high quality, 8 for telephone-grade
+    wfx.cbSize = 0;
 
     blockSize = (wfx.nAvgBytesPerSec*granularityInMS)/1000;
 
@@ -163,7 +170,8 @@ Boolean WindowsAudioInputDevice_common::openWavInPort(int index, unsigned numCha
     unsigned const bufferSeconds = 10;
     numBlocks = (bufferSeconds*1000)/granularityInMS;
 
-    if (!waveIn_open(index, wfx)) return False;
+    if (!waveIn_open(index, wfx)) 
+        return False;
 
     // Set this process's priority high. I'm not sure how much this is really needed,
     // but the "rat" code does this:
@@ -176,8 +184,17 @@ Boolean WindowsAudioInputDevice_common::waveIn_open(unsigned uid, WAVEFORMATEX& 
 
   do {
     waveIn_reset();
-    if (waveInOpen(&shWaveIn, uid, &wfx,
-		   (DWORD)waveInCallback, 0, CALLBACK_FUNCTION) != MMSYSERR_NOERROR) break;
+    MMRESULT result = waveInOpen(&shWaveIn, uid, &wfx,
+        (DWORD)waveInCallback, 0, CALLBACK_FUNCTION); 
+    if (result != MMSYSERR_NOERROR)
+    {
+        std::cout << "waveInOpen() failed with error " << result << std::endl; 
+        break;
+    }
+    else
+    {
+        std::cout << "waveInOpen() success!" << std::endl; 
+    }
 
     // Allocate read buffers, and headers:
     readData = new unsigned char[numBlocks*blockSize];
