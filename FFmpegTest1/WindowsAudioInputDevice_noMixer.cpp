@@ -134,6 +134,8 @@ Boolean WindowsAudioInputDevice::setInputPort(int portIndex) {
     if (fCurPortIndex >= 0) ourAudioInputPorts[fCurPortIndex].close();;
     fCurPortIndex = portIndex;
     ourAudioInputPorts[fCurPortIndex].open(fNumChannels, fSamplingFrequency, fGranularityInMS);
+
+    //std::cout << "Audio source port is " << ourAudioInputPorts[fCurPortIndex].name << std::endl; 
   }
   fCurPortIndex = portIndex;
   return True;

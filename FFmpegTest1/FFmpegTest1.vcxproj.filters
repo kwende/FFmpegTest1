@@ -24,13 +24,7 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RTSPBroadcaster.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="x264Encoder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LibAVEncoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="H264LiveServerMediaSession.h">
@@ -56,13 +50,7 @@
     <ClCompile Include="FFmpegTest1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RTSPBroadcaster.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="x264Encoder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LibAVEncoder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="H264LiveServerMediaSession.cpp">

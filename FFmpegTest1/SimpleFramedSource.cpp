@@ -2,10 +2,16 @@
 #include "SimpleFramedSource.h"
 
 EventTriggerId SimpleFramedSource::eventTriggerId = 0;
+timeval SimpleFramedSource::_time;
 
 SimpleFramedSource* SimpleFramedSource::createNew(UsageEnvironment& env)
 {
     return new SimpleFramedSource(env);
+}
+
+timeval SimpleFramedSource::GetLatestTimeVal()
+{
+    return _time; 
 }
 
 SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
@@ -426,6 +432,8 @@ void SimpleFramedSource::DeliverNALUnitsToLive555FromQueue(bool newData)
         fDurationInMicroseconds = 0;
     }
     memmove(fTo, nal.p_payload + trancate, fFrameSize);
+
+    //std::cout << "!"; 
     FramedSource::afterGetting(this);
 }
 

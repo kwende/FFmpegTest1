@@ -41,7 +41,7 @@ public:
     static SimpleFramedSource* createNew(UsageEnvironment& env);
     // appears to be part of some eventing framework from live
     static EventTriggerId eventTriggerId;
-
+    static timeval GetLatestTimeVal(); 
     ~SimpleFramedSource();
     virtual void doGetNextFrame();
     virtual bool isCurrentlyAwaitingData(); 
@@ -56,7 +56,7 @@ private:
     void DeliverNALUnitsToLive555FromQueue(bool newData);
     void GetFrameAndEncodeToNALUnitsAndEnqueue(); 
     int _currentFrameCount; 
-    timeval _time; 
+    static timeval _time; 
     cv::Mat frame;
     long _lastTickCount; 
     // Current Kinect

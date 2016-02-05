@@ -27,7 +27,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #endif
 
 #include <iostream>
-
+#include "SimpleFramedSource.h"
 
 class WindowsAudioInputDevice_common: public AudioInputDevice {
 public:

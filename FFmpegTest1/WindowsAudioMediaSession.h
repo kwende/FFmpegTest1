@@ -21,5 +21,6 @@ private:
     char* fAuxSDPLine;
     char fDoneFlag;
     RTPSink* fDummySink;
+    
 };
 

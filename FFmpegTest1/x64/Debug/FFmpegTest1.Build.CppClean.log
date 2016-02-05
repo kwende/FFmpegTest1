@@ -7,10 +7,10 @@ c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\h264liveservermediasession.obj
 c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\libavencoder.obj
 c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\rtspbroadcaster.obj
 c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\simpleframedsource.obj
-c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\windowsaudioinputdevice_common.obj
 c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\windowsaudioinputdevice_nomixer.obj
 c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\windowsaudiomediasession.obj
 c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\x264encoder.obj
+c:\repos\ffmpegtest1\ffmpegtest1\x64\debug\windowsaudioinputdevice_common.obj
 c:\repos\ffmpegtest1\x64\debug\ffmpegtest1.ilk
 c:\repos\ffmpegtest1\x64\debug\ffmpegtest1.exe
 c:\repos\ffmpegtest1\x64\debug\ffmpegtest1.pdb
