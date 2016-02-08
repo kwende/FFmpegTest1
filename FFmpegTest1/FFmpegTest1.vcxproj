@@ -154,6 +154,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="H264LiveServerMediaSession.h" />
+    <ClInclude Include="KinectHelper.h" />
     <ClInclude Include="SimpleFramedSource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -165,6 +166,7 @@
   <ItemGroup>
     <ClCompile Include="FFmpegTest1.cpp" />
     <ClCompile Include="H264LiveServerMediaSession.cpp" />
+    <ClCompile Include="KinectHelper.cpp" />
     <ClCompile Include="SimpleFramedSource.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

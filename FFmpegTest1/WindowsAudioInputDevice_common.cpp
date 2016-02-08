@@ -56,7 +56,6 @@ Boolean WindowsAudioInputDevice_common::initialSetInputPort(int portIndex) {
 }
 
 void WindowsAudioInputDevice_common::doGetNextFrame() {
-    std::cout << "."; 
 
     if (!fHaveStarted) {
         // Before reading the first audio data, flush any existing data:
@@ -64,7 +63,6 @@ void WindowsAudioInputDevice_common::doGetNextFrame() {
         fHaveStarted = True;
     }
     fTotalPollingDelay = 0;
-
 
     audioReadyPoller1();
 }

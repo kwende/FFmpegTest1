@@ -6,15 +6,17 @@ H264LiveServerMediaSession* H264LiveServerMediaSession::createNew(UsageEnvironme
     return new H264LiveServerMediaSession(env, reuseFirstSource);
 }
 
-H264LiveServerMediaSession::H264LiveServerMediaSession(UsageEnvironment& env, bool reuseFirstSource) :OnDemandServerMediaSubsession(env, reuseFirstSource), fAuxSDPLine(NULL), fDoneFlag(0), fDummySink(NULL)
+H264LiveServerMediaSession::H264LiveServerMediaSession(UsageEnvironment& env, bool reuseFirstSource) :
+    OnDemandServerMediaSubsession(env, reuseFirstSource), fAuxSDPLine(NULL), fDoneFlag(0), fDummySink(NULL)
 {
-
+    KinectHelper::Start(); 
 }
 
 
 H264LiveServerMediaSession::~H264LiveServerMediaSession(void)
 {
     delete[] fAuxSDPLine;
+    KinectHelper::Stop();
 }
 
 
@@ -72,12 +74,8 @@ char const* H264LiveServerMediaSession::getAuxSDPLine(RTPSink* rtpSink, FramedSo
 
 FramedSource* H264LiveServerMediaSession::createNewStreamSource(unsigned clientSessionID, unsigned& estBitRate)
 {
-    // Based on encoder configuration i kept it 90000
     estBitRate = 90000;
     SimpleFramedSource *source = SimpleFramedSource::createNew(envir());
-    // are you trying to keep the reference of the source somewhere? you shouldn't.  
-    // Live555 will create and delete this class object many times. if you store it somewhere  
-    // you will get memory access violation. instead you should configure you source to always read from your data source
     return H264VideoStreamDiscreteFramer::createNew(envir(), source);
 }
 

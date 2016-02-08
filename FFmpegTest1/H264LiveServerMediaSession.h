@@ -2,6 +2,7 @@
 #include "liveMedia.hh"
 #include "OnDemandServerMediaSubsession.hh"
 #include "SimpleFramedSource.h"
+#include "KinectHelper.h"
 
 class H264LiveServerMediaSession: public OnDemandServerMediaSubsession
 {

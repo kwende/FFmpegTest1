@@ -1,316 +1,151 @@
 #include "stdafx.h"
 #include "SimpleFramedSource.h"
 
-EventTriggerId SimpleFramedSource::eventTriggerId = 0;
+EventTriggerId SimpleFramedSource::serverDataReadyEventId = 0;
 timeval SimpleFramedSource::_time;
+
+DWORD WINAPI ReadThread(LPVOID lpParam)
+{
+    SimpleFramedSource* self = (SimpleFramedSource*)lpParam;
+    self->pumpFrames();
+
+    return 0;
+}
+
 
 SimpleFramedSource* SimpleFramedSource::createNew(UsageEnvironment& env)
 {
     return new SimpleFramedSource(env);
 }
 
+bool SimpleFramedSource::Running()
+{
+    return this->_doThread;
+}
+
 timeval SimpleFramedSource::GetLatestTimeVal()
 {
-    return _time; 
+    return _time;
 }
 
 SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
     :FramedSource(env)
 {
-    _lastTickCount = ::GetTickCount();
-    m_pCachedBuffer = 0;
     m_fps = 30;
 
-    HRESULT hr;
-
-    hr = GetDefaultKinectSensor(&m_pKinectSensor);
-    if (FAILED(hr))
-    {
-        return;
-    }
-
-    if (m_pKinectSensor)
-    {
-        // Initialize the Kinect and get the depth reader
-        IDepthFrameSource* pDepthFrameSource = NULL;
-
-        hr = m_pKinectSensor->Open();
-
-        if (SUCCEEDED(hr))
-        {
-            hr = m_pKinectSensor->get_DepthFrameSource(&pDepthFrameSource);
-
-            if (SUCCEEDED(hr))
-            {
-                hr = pDepthFrameSource->OpenReader(&m_pDepthFrameReader);
-            }
-        }
-
-        IInfraredFrameSource* pInfraredFrameSource = NULL; 
-
-        if (SUCCEEDED(hr))
-        {
-            hr = m_pKinectSensor->get_InfraredFrameSource(&pInfraredFrameSource);
-
-            if (SUCCEEDED(hr))
-            {
-                hr = pInfraredFrameSource->OpenReader(&m_pInfraredFrameReader); 
-            }
-        }
-
-        //SafeRelease(pDepthFrameSource);
-        if (pDepthFrameSource != NULL)
-        {
-            pDepthFrameSource->Release();
-        }
-
-        if (pInfraredFrameSource != NULL)
-        {
-            pInfraredFrameSource->Release(); 
-        }
-    }
-
     gettimeofday(&_time, NULL);
-    //_time.tv_sec = 0;
-    //_time.tv_usec = 0;
 
-    //this->_videoCap = new cv::VideoCapture("c:/users/brush/desktop/feynman.mp4");
-    this->_currentFrameCount = 0;
-    // start up the x264 encoder. 
     this->_encoder = new x264Encoder();
     this->_encoder->Initilize();
-    // I'm stil not sure I completely understand what this trigger is for; I'm sure
-    // I'll understand more once I see it in action. 
-    if (eventTriggerId == 0)
+    if (serverDataReadyEventId == 0)
     {
-        eventTriggerId = envir().taskScheduler().createEventTrigger(onEventTriggered);
+        serverDataReadyEventId = envir().taskScheduler().createEventTrigger(onEventTriggered);
     }
+
+    ::InitializeCriticalSection(&_section);
+
+    _serverNeedDataEvent = ::CreateEvent(
+        NULL, FALSE,
+        FALSE, TEXT("Event"));
+
+    _serverShutDownEvent = ::CreateEvent(
+        NULL, FALSE,
+        FALSE, TEXT("SERVERDOWN")); 
+
+    _doThread = true;
+    DWORD dwThreadId;
+    _thread = ::CreateThread(
+        NULL, 0,
+        ReadThread,
+        this, 0, &dwThreadId);
 }
 
-// This is an important integration into the live 555 pipeline. This function appears to be the 
-// dude that's called from the above classes to encode frame data and prepare it for pumping into
-// the live 555 network shtick. 
-void SimpleFramedSource::doGetNextFrame()
+
+void SimpleFramedSource::onEventTriggered(void* clientData)
 {
-    long currentTickCount = ::GetTickCount();
+    SimpleFramedSource* self = (SimpleFramedSource*)clientData;
+    // if there is, pop off the frameQueue and encode
+    self->GetFrameAndEncodeToNALUnitsAndEnqueue();
 
-    //std::cout << (currentTickCount - _lastTickCount) / 1000.0f << std::endl;
+    // let's keep this here for now. it might not matter. 
+    ::gettimeofday(&_time, NULL);
 
-    _lastTickCount = currentTickCount;
+    self->DeliverNALUnitsToLive555FromQueue(true);
+}
 
-    if (this->_nalQueue.empty())
+void SimpleFramedSource::pumpFrames()
+{
+    while(_doThread)
     {
-        // get a frame of data, encode, and enqueue it. 
+        ::WaitForSingleObject(_serverNeedDataEvent, INFINITE);
+
+        if (!_doThread)
+        {
+            break; 
+        }
+
+        // get kinect data. 
+        USHORT* latestFrameBuffer = KinectHelper::GetIRBuffer();
+
+        // synchronized set of data
+        ::EnterCriticalSection(&_section);
+        if (_latestFrameData)
+        {
+            delete _latestFrameData;
+        }
+        _latestFrameData = latestFrameBuffer;
+        ::LeaveCriticalSection(&_section);
+
+        // wait for the server to respond that it's processed the data and needs more. 
+        envir().taskScheduler().triggerEvent(serverDataReadyEventId, this);
+    }
+
+    ::SetEvent(_serverShutDownEvent); 
+}
+
+void SimpleFramedSource::EncodeAndDeliverFrameData()
+{
+    bool dataFoundToDeliver = false;
+
+    // is there anything in the NAL queue? If not, then 
+    // see if there's anything new in the _frameQueue to encode.
+    //if (this->_nalQueue.empty())
+    {
+        // if there is, pop off the frameQueue and encode
         this->GetFrameAndEncodeToNALUnitsAndEnqueue();
-        // get time of day for the broadcaster
 
-        //long microseconds = _time.tv_usec;
-        //microseconds += 33000;
-        //long numberOfSeconds = microseconds / 1000000;
-        //long remainingNumberOfMicroseconds = microseconds % 1000000;
-
-        ////66000 microseconds = 66 milliseconds
-        //_time.tv_sec += numberOfSeconds;
-        //_time.tv_usec = remainingNumberOfMicroseconds;
-
-        //std::cout << _time.tv_sec << "." << _time.tv_usec << std::endl; 
+        // let's keep this here for now. it might not matter. 
         ::gettimeofday(&_time, NULL);
 
-        // take the nal units and push them to live 555. 
+        // take the encoded frame nal units and push them to live 555. 
         this->DeliverNALUnitsToLive555FromQueue(true);
+    }
+    //else if (!this->_nalQueue.empty()) // the queue isn't empty. 
+    //{
+    //    // deliver the remaining stuff off the queue.  
+    //    this->DeliverNALUnitsToLive555FromQueue(false);
+    //}
+}
+
+void SimpleFramedSource::doStopGettingFrames()
+{
+    return;
+}
+
+void SimpleFramedSource::doGetNextFrame()
+{
+    DWORD start = ::GetTickCount(); 
+    // do nothing. we're totally event driven. 
+    if (!this->_nalQueue.empty()) // the queue isn't empty. 
+    {
+        // deliver the remaining stuff off the queue.  
+        this->DeliverNALUnitsToLive555FromQueue(false);
     }
     else
     {
-        // there's already stuff to deliver, so just deliver it. 
-        this->DeliverNALUnitsToLive555FromQueue(false);
+        ::SetEvent(_serverNeedDataEvent);
     }
-}
-
-USHORT* SimpleFramedSource::GetIRBuffer()
-{
-    INT64 nTime = 0;
-    IFrameDescription* pFrameDescription = NULL;
-    int nWidth = 0;
-    int nHeight = 0;
-    USHORT nDepthMinReliableDistance = 0;
-    USHORT nDepthMaxDistance = 0;
-    UINT nBufferSize = 0;
-    UINT16 *pBuffer = NULL;
-
-    IInfraredFrame* pInfraredFrame = NULL;
-
-    //HANDLE hEvents[] = { reinterpret_cast<HANDLE>(m_WaitHandle) };
-    //WaitForMultipleObjects(1, hEvents, true, INFINITE);
-
-    //IDepthFrameArrivedEventArgs* pDepthArgs = nullptr;
-    //HRESULT hr = m_pDepthFrameReader->GetFrameArrivedEventData(m_WaitHandle, &pDepthArgs);
-    HRESULT hr = S_OK;
-    do
-    {
-        hr = m_pInfraredFrameReader->AcquireLatestFrame(&pInfraredFrame);
-    } while (FAILED(hr));
-
-    //::Sleep(30); 
-
-    //pDepthArgs->Release(); 
-
-    hr = pInfraredFrame->get_RelativeTime(&nTime);
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pInfraredFrame->get_FrameDescription(&pFrameDescription);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pFrameDescription->get_Width(&nWidth);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pFrameDescription->get_Height(&nHeight);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pInfraredFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
-    }
-
-    if (!m_pCachedBuffer)
-    {
-        m_pCachedBuffer = new UINT16[nWidth * nHeight];
-    }
-
-    for (int c = 0; c < nWidth * nHeight; c++)
-    {
-        // normalize the incoming infrared data (ushort) to a float ranging from 
-        // [InfraredOutputValueMinimum, InfraredOutputValueMaximum] by
-        // 1. dividing the incoming value by the source maximum value
-        float intensityRatio = static_cast<float>(pBuffer[c]) / InfraredSourceValueMaximum;
-
-        // 2. dividing by the (average scene value * standard deviations)
-        intensityRatio /= InfraredSceneValueAverage * InfraredSceneStandardDeviations;
-
-        // 3. limiting the value to InfraredOutputValueMaximum
-        intensityRatio = min(InfraredOutputValueMaximum, intensityRatio);
-
-        // 4. limiting the lower value InfraredOutputValueMinimym
-        intensityRatio = max(InfraredOutputValueMinimum, intensityRatio);
-
-        // 5. converting the normalized value to a byte and using the result
-        // as the RGB components required by the image
-        byte intensity = static_cast<byte>(intensityRatio * 255.0f);
-
-        m_pCachedBuffer[c] = intensity;
-    }
-
-    if (pInfraredFrame)
-    {
-        pInfraredFrame->Release();
-    }
-
-    if (pFrameDescription)
-    {
-        pFrameDescription->Release();
-    }
-    //else
-    //{
-    //    std::cout << "-";
-    //}
-
-    return m_pCachedBuffer;
-}
-
-USHORT* SimpleFramedSource::GetDepthBuffer()
-{
-    INT64 nTime = 0;
-    IFrameDescription* pFrameDescription = NULL;
-    int nWidth = 0;
-    int nHeight = 0;
-    USHORT nDepthMinReliableDistance = 0;
-    USHORT nDepthMaxDistance = 0;
-    UINT nBufferSize = 0;
-    UINT16 *pBuffer = NULL;
-
-    IDepthFrame* pDepthFrame = NULL;
-
-    //HANDLE hEvents[] = { reinterpret_cast<HANDLE>(m_WaitHandle) };
-    //WaitForMultipleObjects(1, hEvents, true, INFINITE);
-
-    //IDepthFrameArrivedEventArgs* pDepthArgs = nullptr;
-    //HRESULT hr = m_pDepthFrameReader->GetFrameArrivedEventData(m_WaitHandle, &pDepthArgs);
-    HRESULT hr = S_OK;
-    do
-    {
-        hr = m_pDepthFrameReader->AcquireLatestFrame(&pDepthFrame);
-    } while (FAILED(hr));
-
-    //::Sleep(30); 
-
-    //pDepthArgs->Release(); 
-
-    hr = pDepthFrame->get_RelativeTime(&nTime);
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pDepthFrame->get_FrameDescription(&pFrameDescription);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pFrameDescription->get_Width(&nWidth);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pFrameDescription->get_Height(&nHeight);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pDepthFrame->get_DepthMinReliableDistance(&nDepthMinReliableDistance);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        // In order to see the full range of depth (including the less reliable far field depth)
-        // we are setting nDepthMaxDistance to the extreme potential depth threshold
-        nDepthMaxDistance = USHRT_MAX;
-
-        // Note:  If you wish to filter by reliable depth distance, uncomment the following line.
-        //// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
-    }
-
-    if (SUCCEEDED(hr))
-    {
-        hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
-    }
-
-    if (!m_pCachedBuffer)
-    {
-        m_pCachedBuffer = new UINT16[nWidth * nHeight];
-    }
-
-    for (int c = 0; c < nWidth * nHeight; c++)
-    {
-        m_pCachedBuffer[c] = pBuffer[c];
-    }
-
-    if (pDepthFrame)
-    {
-        pDepthFrame->Release();
-    }
-
-    if (pFrameDescription)
-    {
-        pFrameDescription->Release();
-    }
-    //else
-    //{
-    //    std::cout << "-";
-    //}
-
-    return m_pCachedBuffer;
+    //std::cout << (::GetTickCount() - start) << std::endl; 
 }
 
 // this is the guy which will take data, encode it, and push it to the NAL queue. 
@@ -320,8 +155,19 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
 
     int nHeight = 424, nWidth = 512;
 
-   // USHORT* pBuffer = GetDepthBuffer();
-    USHORT* pBuffer = GetIRBuffer();
+    // USHORT* pBuffer = GetDepthBuffer();
+    USHORT* pBuffer = new USHORT[512 * 424];
+
+    ::EnterCriticalSection(&_section);
+    for (int c = 0; c < 512 * 424; c++)
+    {
+        pBuffer[c] = _latestFrameData[c];
+    }
+    ::LeaveCriticalSection(&_section);
+
+    DWORD dwStart = ::GetTickCount();
+
+    //std::cout << (::GetTickCount() - dwStart) << std::endl;
 
     // To convert to a byte, we're discarding the most-significant
     // rather than least-significant bits.
@@ -365,15 +211,7 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
         this->_nalQueue.push(nal);
     }
 
-    //delete pBuffer;
-}
-
-// Static function called whenever whatever "createEventTrigger" spins up decides. 
-// NOTE: I still don't think I have a complete understanding of how this eventing
-// system works. I'm sure I will know more as I see it operate. 
-void SimpleFramedSource::onEventTriggered(void* clientData)
-{
-    ((SimpleFramedSource*)clientData)->DeliverNALUnitsToLive555FromQueue(false);
+    delete pBuffer;
 }
 
 bool SimpleFramedSource::isCurrentlyAwaitingData()
@@ -446,9 +284,12 @@ SimpleFramedSource::~SimpleFramedSource()
         delete this->_encoder;
     }
 
-    if (m_pKinectSensor)
-    {
-        m_pKinectSensor->Close();
-        m_pKinectSensor = NULL;
-    }
+    _doThread = false;
+    ::SetEvent(_serverNeedDataEvent);
+
+    ::WaitForSingleObject(_serverShutDownEvent, INFINITE); 
+    
+    ::CloseHandle(_thread);
+    ::CloseHandle(_serverNeedDataEvent);
+    ::DeleteCriticalSection(&_section);
 }
