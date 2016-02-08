@@ -108,12 +108,12 @@ void WindowsAudioInputDevice_common::audioReadyPoller1() {
         onceAudioIsReady();
     }
     else {
-        unsigned const maxPollingDelay = (100 + fGranularityInMS) * 1000;
-        if (fTotalPollingDelay > maxPollingDelay) {
-            // We've waited too long for the audio device -s assume it's down:
-            handleClosure(this);
-            return;
-        }
+        //unsigned const maxPollingDelay = (100 + fGranularityInMS) * 1000;
+        //if (fTotalPollingDelay > maxPollingDelay) {
+        //    // We've waited too long for the audio device -s assume it's down:
+        //    //handleClosure(this);
+        //    return;
+        //}
 
         // Try again after a short delay:
         unsigned const uSecondsToDelay = fGranularityInMS * 1000;
@@ -125,17 +125,14 @@ void WindowsAudioInputDevice_common::audioReadyPoller1() {
 
 void WindowsAudioInputDevice_common::onceAudioIsReady() {
     fFrameSize = readFromBuffers(fTo, fMaxSize, fPresentationTime);
-    //std::cout << "fFrameSize: " << fFrameSize << std::endl;
 
     if (fFrameSize <= 1) {
         // The source is no longer readable
-        std::cout << "Audio source is no longer available. Closing." << std::endl;
         handleClosure(this);
         return;
     }
     fDurationInMicroseconds = 1000000 / fSamplingFrequency;
-
-    //std::cout << "-";
+    //gettimeofday(&fPresentationTime, NULL); 
 
     // Call our own 'after getting' function.  Because we sometimes get here
     // after returning from a delay, we can call this directly, without risking
@@ -145,6 +142,7 @@ void WindowsAudioInputDevice_common::onceAudioIsReady() {
 
 static void CALLBACK waveInCallback(HWAVEIN /*hwi*/, UINT uMsg,
     DWORD_PTR /*dwInstance*/, DWORD_PTR dwParam1, DWORD_PTR /*dwParam2*/) {
+    
     switch (uMsg) {
     case WIM_DATA:
         WAVEHDR* hdr = (WAVEHDR*)dwParam1;
@@ -156,6 +154,8 @@ static void CALLBACK waveInCallback(HWAVEIN /*hwi*/, UINT uMsg,
 Boolean WindowsAudioInputDevice_common::openWavInPort(int index, unsigned numChannels, unsigned samplingFrequency, unsigned granularityInMS) {
     uSecsPerByte = (8 * 1e6) / (_bitsPerSample*numChannels*samplingFrequency);
 
+    std::cout << "." << std::endl; 
+
     // Configure the port, based on the specified parameters:
     WAVEFORMATEX wfx;
     wfx.wFormatTag = WAVE_FORMAT_PCM;
@@ -165,13 +165,6 @@ Boolean WindowsAudioInputDevice_common::openWavInPort(int index, unsigned numCha
     wfx.nBlockAlign = (numChannels*_bitsPerSample) / 8;
     wfx.nAvgBytesPerSec = samplingFrequency*wfx.nBlockAlign;
     wfx.cbSize = 0;
-
-    //std::cout << "wFormatTag = " << wfx.wFormatTag << std::endl; ;
-    //std::cout << "nChannels = " << wfx.nChannels << std::endl; ;
-    //std::cout << "nSamplesPerSec = " << wfx.nSamplesPerSec << std::endl; ;
-    //std::cout << "wBitsPerSample = " << wfx.wBitsPerSample << std::endl; ;
-    //std::cout << "nBlockAlign = " << wfx.nBlockAlign << std::endl; ;
-    //std::cout << "nAvgBytesPerSec = " << wfx.nAvgBytesPerSec << std::endl; ;
 
     blockSize = (wfx.nAvgBytesPerSec*granularityInMS) / 1000;
 
@@ -195,10 +188,6 @@ Boolean WindowsAudioInputDevice_common::waveIn_open(unsigned uid, WAVEFORMATEX& 
         waveIn_reset();
         MMRESULT result = waveInOpen(&shWaveIn, uid, &wfx,
             (DWORD_PTR)waveInCallback, 0, CALLBACK_FUNCTION);
-
-        //std::cout << "Open " << shWaveIn << std::endl;
-
-        //std::cout << "Open status " << result << std::endl; 
 
         if (result != MMSYSERR_NOERROR) break;
 
@@ -239,8 +228,6 @@ Boolean WindowsAudioInputDevice_common::waveIn_open(unsigned uid, WAVEFORMATEX& 
 void WindowsAudioInputDevice_common::waveIn_close() {
     if (shWaveIn == NULL) return; // already closed
 
-    //std::cout << "Stop " << shWaveIn << std::endl;
-
     waveInStop(shWaveIn);
     waveInReset(shWaveIn);
 
@@ -272,6 +259,9 @@ unsigned WindowsAudioInputDevice_common::readFromBuffers(unsigned char* to, unsi
     // Begin by computing the creation time of (the first bytes of) this returned audio data:
     if (readHead != NULL) {
         int hdrIndex = readHead - readHdrs;
+        
+        //::gettimeofday(creationTime, NULL);
+
         creationTime = readTimes[hdrIndex];
 
         // Adjust this time to allow for any data that's already been read from this buffer:
@@ -309,18 +299,15 @@ void WindowsAudioInputDevice_common::releaseHeadBuffer() {
 
     toRelease->lpNext = NULL;
 
-    toRelease->dwFlags = 0;
+    //toRelease->dwFlags &= ~WHDR_DONE;
 
-    //std::cout << "Giving buffer back to system." << std::endl; 
-    //waveInPrepareHeader(shWaveIn, toRelease, sizeof(WAVEHDR));
+    waveInPrepareHeader(shWaveIn, toRelease, sizeof(WAVEHDR));
     waveInAddBuffer(shWaveIn, toRelease, sizeof(WAVEHDR));
     bytesUsedAtReadHead = 0;
 }
 
 void WindowsAudioInputDevice_common::waveInProc(WAVEHDR* hdr) {
     unsigned hdrIndex = hdr - readHdrs;
-
-    //std::cout << "+"; 
 
     // Record the time that the data arrived:
     int dontCare;
@@ -335,7 +322,13 @@ void WindowsAudioInputDevice_common::waveInProc(WAVEHDR* hdr) {
     }
     else {
         readHead = readTail = hdr;
+
+        if (!hdr)
+        {
+            return; 
+        }
     }
+
     SetEvent(hAudioReady);
 }
 

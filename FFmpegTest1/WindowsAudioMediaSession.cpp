@@ -94,13 +94,6 @@ FramedSource* WindowsAudioMediaSession::createNewStreamSource(unsigned clientSes
     }
 
     AudioInputDevice *source = AudioInputDevice::createNew(envir(), i, bitsPerSample, numChannels, samplingFrequency);
-    //source = EndianSwap16::createNew(envir(), source);
-    //sessionStateS.audioSink->startPlaying(*sessionStateS.audioSource, RTPSender::afterPlaying, NULL);
-
-    // are you trying to keep the reference of the source somewhere? you shouldn't.  
-    // Live555 will create and delete this class object many times. if you store it somewhere  
-    // you will get memory access violation. instead you should configure you source to always read from your data source
-    //return AC3AudioStreamFramer::createNew(envir(), EndianSwap16::createNew(envir(), source));
     return EndianSwap16::createNew(envir(), source);
 }
 

@@ -145,7 +145,6 @@ void SimpleFramedSource::doGetNextFrame()
     {
         ::SetEvent(_serverNeedDataEvent);
     }
-    //std::cout << (::GetTickCount() - start) << std::endl; 
 }
 
 // this is the guy which will take data, encode it, and push it to the NAL queue. 
@@ -167,7 +166,6 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
 
     DWORD dwStart = ::GetTickCount();
 
-    //std::cout << (::GetTickCount() - dwStart) << std::endl;
 
     // To convert to a byte, we're discarding the most-significant
     // rather than least-significant bits.
@@ -258,8 +256,6 @@ void SimpleFramedSource::DeliverNALUnitsToLive555FromQueue(bool newData)
     //http://comments.gmane.org/gmane.comp.multimedia.live555.devel/4930
     //http://stackoverflow.com/questions/13863673/how-to-write-a-live555-framedsource-to-allow-me-to-stream-h-264-live
     timeval lastPresentationTime = fPresentationTime;
-    //std::cout << (this->_time.tv_sec - lastPresentationTime.tv_sec) << std::endl;
-    //std::cout << this->_time.tv_sec << "." << this->_time.tv_usec << std::endl;
     fPresentationTime = this->_time;
     if (newData)
     {
@@ -271,7 +267,6 @@ void SimpleFramedSource::DeliverNALUnitsToLive555FromQueue(bool newData)
     }
     memmove(fTo, nal.p_payload + trancate, fFrameSize);
 
-    //std::cout << "!"; 
     FramedSource::afterGetting(this);
 }
 

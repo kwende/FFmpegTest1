@@ -62,17 +62,6 @@ void x264Encoder::UnInitilize()
 //void x264Encoder::EncodeFrame(const cv::Mat& image)
 void x264Encoder::EncodeFrame(cv::Mat& image)
 {
-    //long currentTime = ::GetTickCount(); 
-    //long sleepTime = _waitPeriod - (currentTime - _lastEncodeTime);
-
-    //if (_lastEncodeTime != -1 && sleepTime > 0)
-    //{
-    //    std::cout << "Sleep " << sleepTime << std::endl; 
-    //    ::Sleep(sleepTime); 
-    //}
-
-    //_lastEncodeTime = currentTime;
-
     int srcStride = parameters.i_width * 3;
     sws_scale(convertContext, &(image.data), &srcStride, 0, parameters.i_height, picture_in.img.plane, picture_in.img.i_stride);
     x264_nal_t* nals;
