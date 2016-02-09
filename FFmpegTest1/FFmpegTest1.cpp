@@ -27,9 +27,9 @@ int main()
     std::string streamName = "feynman";
     ServerMediaSession* sms = ServerMediaSession::createNew(*usageEnvironment, streamName.c_str(), streamName.c_str(), "Live H264 Stream");
 
-    H264LiveServerMediaSession *liveSubSession = H264LiveServerMediaSession::createNew(*usageEnvironment, false);
-    //sms->addSubsession(liveSubSession);
-    WindowsAudioMediaSession* audioSession = WindowsAudioMediaSession::createNew(*usageEnvironment, false);
+    H264LiveServerMediaSession *liveSubSession = H264LiveServerMediaSession::createNew(*usageEnvironment, true);
+    sms->addSubsession(liveSubSession);
+    WindowsAudioMediaSession* audioSession = WindowsAudioMediaSession::createNew(*usageEnvironment, true);
     sms->addSubsession(audioSession);
     rtspServer->addServerMediaSession(sms);
     char* url = rtspServer->rtspURL(sms);

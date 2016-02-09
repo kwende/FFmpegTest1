@@ -45,9 +45,6 @@
     <ClInclude Include="KinectHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WavHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -75,9 +72,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="KinectHelper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WavHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -154,8 +154,6 @@ static void CALLBACK waveInCallback(HWAVEIN /*hwi*/, UINT uMsg,
 Boolean WindowsAudioInputDevice_common::openWavInPort(int index, unsigned numChannels, unsigned samplingFrequency, unsigned granularityInMS) {
     uSecsPerByte = (8 * 1e6) / (_bitsPerSample*numChannels*samplingFrequency);
 
-    std::cout << "." << std::endl; 
-
     // Configure the port, based on the specified parameters:
     WAVEFORMATEX wfx;
     wfx.wFormatTag = WAVE_FORMAT_PCM;
