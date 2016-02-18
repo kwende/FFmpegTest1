@@ -36,7 +36,7 @@ private:
     HANDLE _thread, _serverNeedDataEvent, _serverShutDownEvent;
     USHORT* _latestFrameData; 
     CRITICAL_SECTION _section; 
-    bool _doThread; 
+    static bool _doThread; 
     bool _isUnprocessedFrameAvailable; 
 };
 

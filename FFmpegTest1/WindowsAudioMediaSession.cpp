@@ -87,7 +87,7 @@ FramedSource* WindowsAudioMediaSession::createNewStreamSource(unsigned clientSes
     for (; i < names->numPorts; i++)
     {
         std::string portName(names->portName[i]);
-        if (portName.find("tek") != std::string::npos)
+        if (portName.find("Xbox") == std::string::npos)
         {
             break;
         }

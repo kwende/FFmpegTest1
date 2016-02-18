@@ -39,7 +39,7 @@ private:
     SwsContext* convertContext;
     std::queue<x264_nal_t> outputQueue;
     x264_param_t parameters;
-    x264_picture_t picture_in, picture_out;
+    x264_picture_t picture_in, picture_out, picture_out2;
     x264_t* encoder;
     int _waitPeriod, _fps; 
     long _lastEncodeTime; 

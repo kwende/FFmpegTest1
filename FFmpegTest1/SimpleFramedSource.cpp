@@ -3,6 +3,7 @@
 
 EventTriggerId SimpleFramedSource::serverDataReadyEventId = 0;
 timeval SimpleFramedSource::_time;
+bool SimpleFramedSource::_doThread;
 
 DWORD WINAPI ReadThread(LPVOID lpParam)
 {
@@ -33,6 +34,8 @@ SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
 {
     m_fps = 30;
 
+    _latestFrameData = NULL;
+
     gettimeofday(&_time, NULL);
 
     this->_encoder = new x264Encoder();
@@ -50,7 +53,7 @@ SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
 
     _serverShutDownEvent = ::CreateEvent(
         NULL, FALSE,
-        FALSE, TEXT("SERVERDOWN")); 
+        FALSE, TEXT("SERVERDOWN"));
 
     _doThread = true;
     DWORD dwThreadId;
@@ -64,24 +67,27 @@ SimpleFramedSource::SimpleFramedSource(UsageEnvironment& env)
 void SimpleFramedSource::onEventTriggered(void* clientData)
 {
     SimpleFramedSource* self = (SimpleFramedSource*)clientData;
-    // if there is, pop off the frameQueue and encode
-    self->GetFrameAndEncodeToNALUnitsAndEnqueue();
+    if (self->_doThread)
+    {
+        // if there is, pop off the frameQueue and encode
+        self->GetFrameAndEncodeToNALUnitsAndEnqueue();
 
-    // let's keep this here for now. it might not matter. 
-    ::gettimeofday(&_time, NULL);
+        // let's keep this here for now. it might not matter. 
+        ::gettimeofday(&_time, NULL);
 
-    self->DeliverNALUnitsToLive555FromQueue(true);
+        self->DeliverNALUnitsToLive555FromQueue(true);
+    }
 }
 
 void SimpleFramedSource::pumpFrames()
 {
-    while(_doThread)
+    while (_doThread)
     {
         ::WaitForSingleObject(_serverNeedDataEvent, INFINITE);
 
         if (!_doThread)
         {
-            break; 
+            break;
         }
 
         // get kinect data. 
@@ -100,7 +106,7 @@ void SimpleFramedSource::pumpFrames()
         envir().taskScheduler().triggerEvent(serverDataReadyEventId, this);
     }
 
-    ::SetEvent(_serverShutDownEvent); 
+    ::SetEvent(_serverShutDownEvent);
 }
 
 void SimpleFramedSource::EncodeAndDeliverFrameData()
@@ -134,7 +140,7 @@ void SimpleFramedSource::doStopGettingFrames()
 
 void SimpleFramedSource::doGetNextFrame()
 {
-    DWORD start = ::GetTickCount(); 
+    DWORD start = ::GetTickCount();
     // do nothing. we're totally event driven. 
     if (!this->_nalQueue.empty()) // the queue isn't empty. 
     {
@@ -209,6 +215,7 @@ void SimpleFramedSource::GetFrameAndEncodeToNALUnitsAndEnqueue()
         this->_nalQueue.push(nal);
     }
 
+
     delete pBuffer;
 }
 
@@ -282,8 +289,8 @@ SimpleFramedSource::~SimpleFramedSource()
     _doThread = false;
     ::SetEvent(_serverNeedDataEvent);
 
-    ::WaitForSingleObject(_serverShutDownEvent, INFINITE); 
-    
+    ::WaitForSingleObject(_serverShutDownEvent, INFINITE);
+
     ::CloseHandle(_thread);
     ::CloseHandle(_serverNeedDataEvent);
     ::DeleteCriticalSection(&_section);
